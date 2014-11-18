@@ -17,6 +17,16 @@ factory('cornercouch', ['$http', function($http) { 'use strict';
             
         return config;
     }
+
+    function constructQuery(params) {
+       var bits = [];
+       for (var p in params) {
+         if (params.hasOwnProperty(p)) {
+            bits.push(encodeURIComponent(p) + "=" + encodeURIComponent(params[p]));
+         }
+       }
+       return bits.join('&');
+    }
     
     function encodeUri(base, part1, part2) {
         var uri = base;
@@ -24,6 +34,7 @@ factory('cornercouch', ['$http', function($http) { 'use strict';
         if (part2) uri = uri + "/" + encodeURIComponent(part2);
         return uri.replace('%2F', '/');
     }
+
 
     // Database-level constructor
     // Database name is required parameter
@@ -158,6 +169,37 @@ factory('cornercouch', ['$http', function($http) { 'use strict';
         });
     };
     
+    CouchDB.prototype.changeSource = function(params) {
+
+       if(!params)
+       {
+          params = {};
+       }
+
+       // Can't think of any reason why you would want to do anything
+       // else
+       params.feed = 'eventsource';
+
+       if (!params.since) {
+          params.since = 'now';
+       }
+
+       var changes_uri = this.uri + '/_changes?' + constructQuery(params);
+
+       var source;
+
+       if (typeof(EventSource) ) {
+          source = new EventSource(changes_uri);
+          source.onmessage = function(m) {
+             console.log("EventSource message " + ng.toJson(m));
+          };
+       }
+       else {
+          alert("No EventSource");
+       }
+       return source;
+    };
+
     CouchDB.prototype.newDoc = function(initData) {
 
         return new this.docClass(initData);
